@@ -14,7 +14,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Node.js/Express REST API for booking venues (bowling alleys, darts lounges, etc.), written in TypeScript with ESM modules (`"type": "module"` in package.json, `module`/`moduleResolution` set for bundler-style ESM in tsconfig).
 
-The entire application currently lives in a single file: `src/index.ts`. There is no database — venues, time slots, and bookings are all in-memory mock arrays/objects defined at the top of that file, so any created bookings are not persisted and reset on restart.
+The application follows a **layered architecture** for clean separation of concerns:
+
+1. **Routes** (`src/routes/`) — Express Router definitions; route mounting happens in `src/index.ts`
+2. **Controllers** (`src/controllers/`) — HTTP request/response handling; Zod validation of request bodies and parameters
+3. **Services** (`src/services/`) — Pure business logic; independent of HTTP; handles core operations like booking creation, status updates, and availability computation
+4. **Types** (`src/types/models.ts`) — Centralized domain type definitions (TypeScript types, not runtime values)
+5. **Validation** (`src/validation/schemas.ts`) — Zod schemas for request validation
+6. **Data** (`src/data/mockData.ts`) — In-memory mock data storage (venues, time slots); no database; data resets on restart
 
 Domain model:
 
@@ -26,10 +33,21 @@ Routes (all under `/api` except `/health`):
 
 - `GET /health` — liveness check
 - `GET /api/venues` — list venues
-- `GET /api/venues/:venueId` — single venue
+- `GET /api/venues/:id` — single venue
 - `GET /api/availability/:venueId` — time slots for a venue, derived from `timeSlots` filtered by `venueId`, with `available`/`spotsRemaining` computed from `capacity - booked`
-- `POST /api/bookings` — create a booking; validates required fields and slot capacity, but does not mutate `slot.booked` (mock only)
-- `PUT /api/bookings/:bookingId` — update a booking's status; validates against the `pending`/`confirmed`/`cancelled` enum but does not look up or persist an actual booking (mock only)
-- Unmatched routes fall through to a catch-all 404 JSON handler
+- `POST /api/bookings` — create a booking; Zod validates required fields; service layer validates slot capacity
+- `PUT /api/bookings/:id` — update a booking's status; Zod validates against `pending`/`confirmed`/`cancelled` enum; service layer validates booking exists
+- Unmatched routes fall through to a catch-all 404 JSON handler in `src/index.ts`
 
-When extending this codebase (e.g. adding real persistence, splitting into routers/controllers, or adding auth), follow the existing single-purpose route-handler style already in `src/index.ts` until a real module structure is introduced.
+Error handling:
+
+- **400 Bad Request** — validation errors (Zod) or business logic constraints (e.g., slot fully booked)
+- **404 Not Found** — resource not found (booking, slot, or venue does not exist)
+- **500 Internal Server Error** — unexpected errors caught by global error middleware
+
+Development setup:
+
+- **Husky** (`npm prepare` script) automatically installs git hooks
+- **Pre-commit hook** (`.husky/pre-commit`) runs `npm run lint && npm run build` before each commit
+- **Prettier** is configured but runs on-save in VS Code (not in pre-commit hook) to keep startup fast
+- **TypeScript** is in `devDependencies` (development/build-time only)

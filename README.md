@@ -6,8 +6,16 @@ A Node.js/Express REST API for booking venues (bowling alleys, darts lounges, an
 
 ## Requirements
 
-- Node.js
+- Node.js 16+
 - npm
+
+## Tech Stack
+
+- **Express** — REST API framework
+- **TypeScript** — Type-safe development
+- **Zod** — Runtime request validation
+- **Cors** — Cross-origin resource sharing
+- **Dotenv** — Environment variable management
 
 ## Setup
 
@@ -15,10 +23,39 @@ A Node.js/Express REST API for booking venues (bowling alleys, darts lounges, an
 npm install
 ```
 
+This will automatically install dependencies and set up git hooks via Husky.
+
 Create a `.env` file in the project root to configure the port (optional, defaults to `5001`; see `.env.example`):
 
 ```
 PORT=5001
+```
+
+## Development
+
+### Pre-commit Hooks
+
+This project uses **Husky** to automatically run checks before each commit:
+
+- **ESLint** — Code quality and style checks
+- **TypeScript** — Type-checking and compilation
+
+If your code has issues, the commit will be blocked until you fix them. You can manually fix ESLint issues by running:
+
+```bash
+npm run lint:fix
+```
+
+### Available Commands
+
+```bash
+npm run dev              # Start development server with hot reload
+npm run build            # Type-check and compile TypeScript
+npm run lint             # Run ESLint checks
+npm run lint:fix         # Auto-fix ESLint issues
+npm run format           # Format code with Prettier
+npm run format:check     # Check Prettier formatting
+npm start                # Run production server (requires npm run build first)
 ```
 
 ## Usage
@@ -42,14 +79,14 @@ Once running, the API is available at `http://localhost:5001` (or your configure
 
 All endpoints return JSON. Routes are prefixed with `/api`, except for the health check.
 
-| Method | Endpoint                     | Description                          |
-| ------ | ---------------------------- | ------------------------------------ |
-| GET    | `/health`                    | Liveness check                       |
-| GET    | `/api/venues`                | List all venues                      |
-| GET    | `/api/venues/:venueId`       | Get a single venue by ID             |
+| Method | Endpoint                  | Description                          |
+| ------ | ------------------------- | ------------------------------------ |
+| GET    | `/health`                 | Liveness check                       |
+| GET    | `/api/venues`             | List all venues                      |
+| GET    | `/api/venues/:id`         | Get a single venue by ID             |
 | GET    | `/api/availability/:venueId` | Get available time slots for a venue |
-| POST   | `/api/bookings`              | Create a booking                     |
-| PUT    | `/api/bookings/:bookingId`   | Update a booking's status            |
+| POST   | `/api/bookings`           | Create a booking                     |
+| PUT    | `/api/bookings/:id`       | Update a booking's status            |
 
 ### `GET /api/availability/:venueId`
 
@@ -69,7 +106,7 @@ Returns time slots for the venue with computed availability:
 
 ### `POST /api/bookings`
 
-Request body:
+Request body (all fields required):
 
 ```json
 {
@@ -80,9 +117,31 @@ Request body:
 }
 ```
 
-Validates that the venue and slot exist and that the slot has remaining capacity. Returns `201` with the created booking (status `pending`) on success.
+**Validation rules:**
+- `venueId`: Required, non-empty string
+- `slotId`: Required, non-empty string
+- `customerName`: Required, minimum 3 characters
+- `customerEmail`: Required, valid email format
 
-### `PUT /api/bookings/:bookingId`
+Returns `201` with the created booking (status `pending`) on success.
+
+**Error response (400):**
+```json
+{
+  "error": "Validation failed",
+  "details": [
+    {
+      "code": "too_small",
+      "minimum": 3,
+      "type": "string",
+      "path": ["customerName"],
+      "message": "Customer name must be at least 3 characters"
+    }
+  ]
+}
+```
+
+### `PUT /api/bookings/:id`
 
 Request body:
 
@@ -96,7 +155,42 @@ Request body:
 
 ## Project Structure
 
-The entire application lives in `src/index.ts`, including mock data, route handlers, and server startup. See `CLAUDE.md` for a more detailed architecture overview.
+```
+src/
+├── index.ts              # Express app setup and main routes
+├── types/
+│   └── models.ts         # Domain types (Venue, TimeSlot, Booking, etc.)
+├── validation/
+│   └── schemas.ts        # Zod validation schemas for API requests
+├── services/
+│   ├── booking.ts        # Booking business logic
+│   ├── venue.ts          # Venue business logic
+│   └── availability.ts   # Availability computation logic
+├── controllers/
+│   ├── booking.ts        # Booking HTTP request handlers
+│   ├── venue.ts          # Venue HTTP request handlers
+│   └── availability.ts   # Availability HTTP request handlers
+├── routes/
+│   ├── booking.ts        # Booking route definitions
+│   ├── venue.ts          # Venue route definitions
+│   ├── availability.ts   # Availability route definitions
+│   └── health.ts         # Health check route
+└── data/
+    └── mockData.ts       # In-memory mock data storage
+```
+
+### Architecture
+
+The application follows a **layered architecture** with clear separation of concerns:
+
+- **Routes** — Express route definitions
+- **Controllers** — HTTP request/response handling with Zod validation
+- **Services** — Pure business logic, independent of HTTP
+- **Types** — Centralized domain type definitions
+- **Validation** — Zod schemas for request validation
+- **Data** — Mock data storage (in-memory)
+
+This structure is production-ready and scales well as the application grows.
 
 ## Scripts
 

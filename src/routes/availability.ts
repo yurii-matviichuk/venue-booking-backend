@@ -3,6 +3,6 @@ import * as availabilityController from '../controllers/availability';
 
 const availabilityRouter = express.Router();
 
-availabilityRouter.get('/:id', availabilityController.getByVenue);
+availabilityRouter.get('/:venueId', availabilityController.getByVenue);
 
 export default availabilityRouter;
