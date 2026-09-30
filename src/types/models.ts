@@ -34,7 +34,3 @@ export type AvailabilitySlot = {
   available: boolean;
   spotsRemaining: number;
 };
-
-export type UpdateBookingBody = {
-  status: Booking['status'];
-};

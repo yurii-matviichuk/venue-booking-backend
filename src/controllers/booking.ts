@@ -1,41 +1,55 @@
 import { type Request, type Response } from 'express';
-import type { Booking, UpdateBookingBody } from '../types/models';
+import type { Booking } from '../types/models';
+import { createBookingSchema, updateBookingStatusSchema } from '../validation/schemas';
 import * as bookingService from '../services/booking';
 
 export const create = (
-  req: Request<
-    Record<string, never>,
-    never,
-    { venueId: string; slotId: string; customerName: string; customerEmail: string }
-  >,
-  res: Response<{ booking: Booking } | { error: string }>,
+  req: Request<Record<string, never>, never, unknown>,
+  res: Response<{ booking: Booking } | { error: string; details?: unknown }>,
 ) => {
-  const { venueId, slotId, customerName, customerEmail } = req.body;
+  const validation = createBookingSchema.safeParse(req.body);
 
-  if (!venueId || !slotId || !customerName || !customerEmail) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: validation.error.issues,
+    });
   }
 
-  const result = bookingService.createBooking(venueId, slotId, customerName, customerEmail);
+  const result = bookingService.createBooking(validation.data);
 
   if ('error' in result) {
-    return res.status(400).json(result);
+    const statusCode = result.error.includes('not found') ? 404 : 400;
+    return res.status(statusCode).json({ error: result.error });
   }
 
   return res.status(201).json(result);
 };
 
 export const updateStatus = (
-  req: Request<{ bookingId: string }, never, UpdateBookingBody>,
-  res: Response<{ booking: Booking } | { error: string }>,
+  req: Request<{ id: string }, never, unknown>,
+  res: Response<{ booking: Booking } | { error: string; details?: unknown }>,
 ) => {
-  const { bookingId } = req.params;
-  const { status } = req.body;
+  const { id } = req.params;
 
-  const result = bookingService.updateBookingStatus(bookingId, status);
+  if (!id?.trim()) {
+    return res.status(400).json({ error: 'Booking ID is required' });
+  }
+
+  const validation = updateBookingStatusSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: validation.error.issues,
+    });
+  }
+
+  const result = bookingService.updateBookingStatus(id, validation.data.status);
 
   if ('error' in result) {
-    return res.status(400).json(result);
+    const statusCode = result.error.includes('not found') ? 404 : 400;
+    return res.status(statusCode).json({ error: result.error });
   }
 
   return res.json(result);

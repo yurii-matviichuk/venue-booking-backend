@@ -1,32 +1,50 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
-import express, { type Express, type Request, type Response } from 'express';
+import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import bookingRouter from './routes/booking';
 import venueRouter from './routes/venue';
 import availabilityRouter from './routes/availability';
+import healthRouter from './routes/health';
 
 dotenv.config();
 
-const app: Express = express();
-app.use(cors());
-app.use(express.json());
+export function createApp(): Express {
+  const app = express();
 
-// Routes
-app.use('/api/bookings', bookingRouter);
-app.use('/api/venues', venueRouter);
-app.use('/api/availability', availabilityRouter);
+  // Middleware
+  app.use(cors());
+  app.use(express.json());
 
-app.get('/health', (req: Request, res: Response<{ status: string }>) => {
-  return res.json({ status: 'Server running ✅' });
-});
+  // Request logging
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+  });
 
-// 404 handler
-app.use((req: Request, res: Response<{ error: string }>) => {
-  return res.status(404).json({ error: 'Route not found' });
-});
+  // Routes
+  app.use('/health', healthRouter);
+  app.use('/api/bookings', bookingRouter);
+  app.use('/api/venues', venueRouter);
+  app.use('/api/availability', availabilityRouter);
 
+  // 404 handler
+  app.use((_req: Request, res: Response) => {
+    return res.status(404).json({ error: 'Route not found' });
+  });
+
+  // Error handling middleware
+  app.use((err: Error, _req: Request, res: Response) => {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  });
+
+  return app;
+}
+
+// Server startup
+const app = createApp();
 const PORT = process.env.PORT || 5001;
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📍 API: http://localhost:${PORT}/api/venues`);
 });

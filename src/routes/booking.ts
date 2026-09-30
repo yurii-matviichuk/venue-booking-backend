@@ -4,6 +4,6 @@ import * as bookingController from '../controllers/booking';
 const bookingRouter = express.Router();
 
 bookingRouter.post('/', bookingController.create);
-bookingRouter.put('/:bookingId', bookingController.updateStatus);
+bookingRouter.put('/:id', bookingController.updateStatus);
 
 export default bookingRouter;

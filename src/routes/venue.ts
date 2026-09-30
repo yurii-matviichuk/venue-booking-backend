@@ -1,9 +1,9 @@
-import express, { type Request, type Response } from 'express';
+import express from 'express';
 import * as venueController from '../controllers/venue';
 
 const venueRouter = express.Router();
 
 venueRouter.get('/', venueController.getAll);
-venueRouter.get('/:venueId', venueController.getById);
+venueRouter.get('/:id', venueController.getById);
 
 export default venueRouter;

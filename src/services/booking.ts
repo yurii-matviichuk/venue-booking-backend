@@ -1,14 +1,13 @@
 import type { Booking } from '../types/models';
+import { CreateBookingInput } from '../validation/schemas';
 import { timeSlots } from '../data/mockData';
 
 const bookings: Booking[] = []; // In-memory storage (mock)
 
 export const createBooking = (
-  venueId: string,
-  slotId: string,
-  customerName: string,
-  customerEmail: string,
+  data: CreateBookingInput,
 ): { booking: Booking } | { error: string } => {
+  const { venueId, slotId, customerName, customerEmail } = data;
   const slot = timeSlots.find((s) => s.id === slotId);
 
   if (!slot) {
@@ -31,6 +30,7 @@ export const createBooking = (
   };
 
   bookings.push(booking);
+
   return { booking };
 };
 
@@ -47,6 +47,7 @@ export const updateBookingStatus = (
   }
 
   const booking = bookings.find((b) => b.id === bookingId);
+
   if (!booking) {
     return { error: 'Booking not found' };
   }
@@ -55,8 +56,4 @@ export const updateBookingStatus = (
   booking.updatedAt = new Date().toISOString();
 
   return { booking };
-};
-
-export const getBookingById = (bookingId: string): Booking | null => {
-  return bookings.find((b) => b.id === bookingId) || null;
 };
