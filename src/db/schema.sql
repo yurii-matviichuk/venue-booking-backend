@@ -1,0 +1,44 @@
+CREATE TABLE venues (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  location VARCHAR(255) NOT NULL,
+  timezone VARCHAR(50) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE time_slots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  start_time TIMESTAMPTZ NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL,
+  price DECIMAL(10, 2) NOT NULL,
+  capacity INTEGER NOT NULL,
+  booked INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE bookings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  time_slot_id UUID NOT NULL REFERENCES time_slots(id) ON DELETE CASCADE,
+  venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  customer_name VARCHAR(255) NOT NULL,
+  customer_email VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled')),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample data with fixed UUIDs so the seed is repeatable
+INSERT INTO venues (id, name, location, timezone) VALUES
+  ('10000000-0000-4000-8000-000000000001', 'Bowling Alley Downtown', 'Downtown', 'America/New_York'),
+  ('10000000-0000-4000-8000-000000000002', 'Darts Lounge', 'Midtown', 'America/Chicago');
+
+INSERT INTO time_slots (id, venue_id, start_time, end_time, price, capacity, booked) VALUES
+  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '2026-10-10T10:00:00Z', '2026-10-10T11:00:00Z', 25.00, 4, 2),
+  ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '2026-10-10T14:00:00Z', '2026-10-10T15:00:00Z', 25.00, 4, 0),
+  ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000002', '2026-10-10T18:00:00Z', '2026-10-10T19:00:00Z', 30.00, 6, 3);
+
+INSERT INTO bookings (id, time_slot_id, venue_id, customer_name, customer_email, status) VALUES
+  ('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'John Doe', 'john@example.com', 'confirmed'),
+  ('30000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'Jane Smith', 'jane@example.com', 'confirmed'),
+  ('30000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000002', 'Bob Johnson', 'bob@example.com', 'pending');

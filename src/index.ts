@@ -1,12 +1,10 @@
+import 'dotenv/config';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import bookingRouter from './routes/booking';
 import venueRouter from './routes/venue';
 import availabilityRouter from './routes/availability';
 import healthRouter from './routes/health';
-
-dotenv.config();
 
 export function createApp(): Express {
   const app = express();
