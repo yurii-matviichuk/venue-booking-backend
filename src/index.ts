@@ -33,7 +33,7 @@ export function createApp(): Express {
   });
 
   // Error handling middleware
-  app.use((err: Error, _req: Request, res: Response) => {
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err);
     return res.status(500).json({ error: 'Internal server error' });
   });
