@@ -4,6 +4,9 @@ export type Venue = {
   location: string;
   timezone: string;
 };
+  category: string;
+  description: string;
+  imageFile: string | null;
 
 export type TimeSlot = {
   id: string;
