@@ -2,7 +2,7 @@
 
 A Node.js/Express REST API for booking venues (bowling alleys, darts lounges, and similar entertainment venues). Written in TypeScript with ESM modules.
 
-> **Note:** This project is currently a prototype. Venues, time slots, and bookings are all stored in in-memory mock data — nothing is persisted to a database, and data resets on every server restart.
+> **Note:** This project is a work in progress. Data is stored in PostgreSQL (see `docker-compose.yml`, `src/db/schema.sql` and `src/db/seed.sql`).
 
 ## Requirements
 
@@ -79,14 +79,14 @@ Once running, the API is available at `http://localhost:5001` (or your configure
 
 All endpoints return JSON. Routes are prefixed with `/api`, except for the health check.
 
-| Method | Endpoint                  | Description                          |
-| ------ | ------------------------- | ------------------------------------ |
-| GET    | `/health`                 | Liveness check                       |
-| GET    | `/api/venues`             | List all venues                      |
-| GET    | `/api/venues/:id`         | Get a single venue by ID             |
+| Method | Endpoint                     | Description                          |
+| ------ | ---------------------------- | ------------------------------------ |
+| GET    | `/health`                    | Liveness check                       |
+| GET    | `/api/venues`                | List all venues                      |
+| GET    | `/api/venues/:id`            | Get a single venue by ID             |
 | GET    | `/api/availability/:venueId` | Get available time slots for a venue |
-| POST   | `/api/bookings`           | Create a booking                     |
-| PUT    | `/api/bookings/:id`       | Update a booking's status            |
+| POST   | `/api/bookings`              | Create a booking                     |
+| PUT    | `/api/bookings/:id`          | Update a booking's status            |
 
 ### `GET /api/availability/:venueId`
 
@@ -118,6 +118,7 @@ Request body (all fields required):
 ```
 
 **Validation rules:**
+
 - `venueId`: Required, non-empty string
 - `slotId`: Required, non-empty string
 - `customerName`: Required, minimum 3 characters
@@ -126,6 +127,7 @@ Request body (all fields required):
 Returns `201` with the created booking (status `pending`) on success.
 
 **Error response (400):**
+
 ```json
 {
   "error": "Validation failed",
@@ -157,26 +159,33 @@ Request body:
 
 ```
 src/
-├── index.ts              # Express app setup and main routes
+├── app.ts                # Express app setup and main routes
+├── server.ts             # Entry point: starts the HTTP server
 ├── types/
 │   └── models.ts         # Domain types (Venue, TimeSlot, Booking, etc.)
 ├── validation/
 │   └── schemas.ts        # Zod validation schemas for API requests
+├── middleware/
+│   └── requireAuth.ts    # Rejects requests without a logged-in user
 ├── services/
 │   ├── booking.ts        # Booking business logic
 │   ├── venue.ts          # Venue business logic
 │   └── availability.ts   # Availability computation logic
 ├── controllers/
+│   ├── auth.ts           # Auth HTTP request handlers
 │   ├── booking.ts        # Booking HTTP request handlers
 │   ├── venue.ts          # Venue HTTP request handlers
 │   └── availability.ts   # Availability HTTP request handlers
 ├── routes/
+│   ├── auth.ts           # Auth route definitions
 │   ├── booking.ts        # Booking route definitions
 │   ├── venue.ts          # Venue route definitions
 │   ├── availability.ts   # Availability route definitions
 │   └── health.ts         # Health check route
-└── data/
-    └── mockData.ts       # In-memory mock data storage
+└── db/
+    ├── connection.ts     # PostgreSQL pool
+    ├── schema.sql        # Tables
+    └── seed.sql          # Dev sample data
 ```
 
 ### Architecture
@@ -188,15 +197,15 @@ The application follows a **layered architecture** with clear separation of conc
 - **Services** — Pure business logic, independent of HTTP
 - **Types** — Centralized domain type definitions
 - **Validation** — Zod schemas for request validation
-- **Data** — Mock data storage (in-memory)
+- **Database** — PostgreSQL (`src/db/`)
 
 This structure is production-ready and scales well as the application grows.
 
 ## Scripts
 
-| Script          | Description                                  |
-| --------------- | -------------------------------------------- |
-| `npm run dev`   | Run the server with hot reload via `tsx`     |
-| `npm run build` | Type-check and compile TypeScript to `dist/` |
-| `npm start`     | Run the compiled server from `dist/index.js` |
-| `npm test`      | Not yet implemented                          |
+| Script          | Description                                   |
+| --------------- | --------------------------------------------- |
+| `npm run dev`   | Run the server with hot reload via `tsx`      |
+| `npm run build` | Type-check and compile TypeScript to `dist/`  |
+| `npm start`     | Run the compiled server from `dist/server.js` |
+| `npm test`      | Not yet implemented                           |
