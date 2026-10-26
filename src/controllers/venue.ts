@@ -1,18 +1,26 @@
 import { type Request, type Response } from 'express';
-import type { Venue } from '../types/models';
-import * as venueService from '../services/venue';
+import type { Venue } from '../types/models.js';
+import { venueQuerySchema } from '../validation/schemas.js';
+import * as venueService from '../services/venue.js';
+import { AppError } from '../errors.js';
 
-export const getAll = (_req: Request, res: Response<Venue[]>) => {
-  const venues = venueService.getAllVenues();
+export const getAll = async (req: Request, res: Response<Venue[]>) => {
+  const validation = venueQuerySchema.safeParse(req.query);
+
+  if (!validation.success) {
+    throw new AppError('VALIDATION_FAILED', validation.error.issues);
+  }
+
+  const venues = await venueService.getAllVenues(validation.data.city);
   return res.json(venues);
 };
 
-export const getById = (req: Request, res: Response<Venue | { error: string }>) => {
+export const getById = async (req: Request, res: Response<Venue>) => {
   const { id } = req.params as { id: string };
-  const venue = venueService.getVenueById(id);
+  const venue = await venueService.getVenueById(id);
 
   if (!venue) {
-    return res.status(404).json({ error: 'Venue not found' });
+    throw new AppError('VENUE_NOT_FOUND');
   }
 
   return res.json(venue);

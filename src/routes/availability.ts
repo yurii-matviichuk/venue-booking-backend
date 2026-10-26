@@ -1,5 +1,5 @@
 import express from 'express';
-import * as availabilityController from '../controllers/availability';
+import * as availabilityController from '../controllers/availability.js';
 
 const availabilityRouter = express.Router();
 

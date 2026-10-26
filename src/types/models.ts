@@ -2,11 +2,12 @@ export type Venue = {
   id: string;
   name: string;
   location: string;
+  city: string;
   timezone: string;
-};
   category: string;
   description: string;
   imageFile: string | null;
+};
 
 export type TimeSlot = {
   id: string;
@@ -30,7 +31,6 @@ export type Booking = {
   updatedAt?: string;
 };
 
-export type AvailabilitySlot = {
 // A booking with the venue and slot details a customer needs to recognise it
 export type BookingDetails = Booking & {
   venueName: string;
@@ -47,8 +47,10 @@ export type User = {
   createdAt: string;
 };
 
+export type AvailabilitySlot = {
   id: string;
   time: string;
+  endTime: string;
   price: number;
   available: boolean;
   spotsRemaining: number;

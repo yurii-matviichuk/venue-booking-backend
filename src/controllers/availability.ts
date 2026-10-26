@@ -1,14 +1,9 @@
 import { type Request, type Response } from 'express';
-import type { AvailabilitySlot } from '../types/models';
-import * as availabilityService from '../services/availability';
+import type { AvailabilitySlot } from '../types/models.js';
+import * as availabilityService from '../services/availability.js';
 
-export const getByVenue = (req: Request, res: Response<AvailabilitySlot[] | { error: string }>) => {
+export const getByVenue = async (req: Request, res: Response<AvailabilitySlot[]>) => {
   const { venueId } = req.params as { venueId: string };
-  const availability = availabilityService.getAvailabilityByVenue(venueId);
-
-  if ('error' in availability) {
-    return res.status(404).json(availability);
-  }
-
+  const availability = await availabilityService.getAvailabilityByVenue(venueId);
   return res.json(availability);
 };
