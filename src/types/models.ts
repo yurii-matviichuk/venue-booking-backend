@@ -31,6 +31,22 @@ export type Booking = {
 };
 
 export type AvailabilitySlot = {
+// A booking with the venue and slot details a customer needs to recognise it
+export type BookingDetails = Booking & {
+  venueName: string;
+  venueLocation: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'customer' | 'admin';
+  createdAt: string;
+};
+
   id: string;
   time: string;
   price: number;
