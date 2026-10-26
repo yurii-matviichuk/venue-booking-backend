@@ -1,56 +1,47 @@
 import { type Request, type Response } from 'express';
-import type { Booking } from '../types/models';
-import { createBookingSchema, updateBookingStatusSchema } from '../validation/schemas';
-import * as bookingService from '../services/booking';
+import type { Booking, BookingDetails } from '../types/models.js';
+import { createBookingSchema, updateBookingStatusSchema } from '../validation/schemas.js';
+import * as bookingService from '../services/booking.js';
+import { AppError } from '../errors.js';
 
-export const create = (
-  req: Request<Record<string, never>, never, unknown>,
-  res: Response<{ booking: Booking } | { error: string; details?: unknown }>,
-) => {
+// These handlers are mounted behind requireAuth, so req.user is always set
+const currentUser = (req: Request) => {
+  if (!req.user) {
+    throw new AppError('UNAUTHORIZED');
+  }
+  return req.user;
+};
+
+export const list = async (req: Request, res: Response<{ bookings: BookingDetails[] }>) => {
+  const bookings = await bookingService.listBookingsForUser(currentUser(req).id);
+  return res.json({ bookings });
+};
+
+export const create = async (req: Request, res: Response<{ booking: Booking }>) => {
   const validation = createBookingSchema.safeParse(req.body);
 
   if (!validation.success) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: validation.error.issues,
-    });
+    throw new AppError('VALIDATION_FAILED', validation.error.issues);
   }
 
-  const result = bookingService.createBooking(validation.data);
-
-  if ('error' in result) {
-    const statusCode = result.error.includes('not found') ? 404 : 400;
-    return res.status(statusCode).json({ error: result.error });
-  }
-
-  return res.status(201).json(result);
+  const booking = await bookingService.createBooking(currentUser(req), validation.data);
+  return res.status(201).json({ booking });
 };
 
-export const updateStatus = (
-  req: Request<{ id: string }, never, unknown>,
-  res: Response<{ booking: Booking } | { error: string; details?: unknown }>,
+export const updateStatus = async (
+  req: Request<{ id: string }>,
+  res: Response<{ booking: Booking }>,
 ) => {
-  const { id } = req.params;
-
-  if (!id?.trim()) {
-    return res.status(400).json({ error: 'Booking ID is required' });
-  }
-
   const validation = updateBookingStatusSchema.safeParse(req.body);
 
   if (!validation.success) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: validation.error.issues,
-    });
+    throw new AppError('VALIDATION_FAILED', validation.error.issues);
   }
 
-  const result = bookingService.updateBookingStatus(id, validation.data.status);
-
-  if ('error' in result) {
-    const statusCode = result.error.includes('not found') ? 404 : 400;
-    return res.status(statusCode).json({ error: result.error });
-  }
-
-  return res.json(result);
+  const booking = await bookingService.updateBookingStatus(
+    currentUser(req),
+    req.params.id,
+    validation.data.status,
+  );
+  return res.json({ booking });
 };

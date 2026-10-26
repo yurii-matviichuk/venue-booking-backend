@@ -29,20 +29,18 @@ export const loginSchema = z.object({
 
 // The customer's name and email come from the logged-in user, not the request body
 export const createBookingSchema = z.object({
-  venueId: z.string().min(1, 'Venue ID is required'),
-  slotId: z.string().min(1, 'Slot ID is required'),
-  customerName: z.string().min(3, 'Customer name must be at least 3 characters'),
-  customerEmail: z.email('Invalid email address'),
+  venueId: z.uuid('Venue ID must be a valid UUID'),
+  slotId: z.uuid('Slot ID must be a valid UUID'),
 });
 
 export const updateBookingStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'cancelled']),
+});
+
 export const venueQuerySchema = z.object({
   city: z.string().trim().min(1).max(100).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
-});
-
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
