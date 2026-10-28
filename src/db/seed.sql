@@ -113,6 +113,39 @@ SET start_time = ((s.start_time AT TIME ZONE v.timezone) + shift.days * INTERVAL
 FROM venues AS v, (SELECT CURRENT_DATE + 1 - DATE '2026-10-20' AS days) AS shift
 WHERE v.id = s.venue_id;
 
+-- Fill the next 28 days with more slots for every venue so the availability calendar has dates to browse.
+-- Each venue keeps the duration, price and capacity of its slots above (most common duration if they differ), with a 20% weekend uplift.
+-- Slots start at 10:00 local time and are spaced a duration plus 2 hours apart, ending by 21:00 so they never overlap each other or the slots above.
+-- Roughly a quarter of days get no slots and a third of slots are dropped, so the calendar has disabled days.
+INSERT INTO time_slots (venue_id, start_time, end_time, price, capacity, booked)
+SELECT v.id,
+       (day.d + slot.start_offset) AT TIME ZONE v.timezone,
+       (day.d + slot.start_offset + s.duration) AT TIME ZONE v.timezone,
+       CASE WHEN EXTRACT(DOW FROM day.d) IN (0, 6) THEN ROUND(s.base_price * 1.2) ELSE s.base_price END,
+       s.capacity,
+       0
+FROM venues AS v
+CROSS JOIN generate_series(1, 28) AS g(n)
+CROSS JOIN LATERAL (SELECT CURRENT_DATE + g.n AS d) AS day
+JOIN LATERAL (
+  SELECT COALESCE(MIN(price), 25) AS base_price,
+         COALESCE(MAX(capacity), 6) AS capacity,
+         COALESCE(MODE() WITHIN GROUP (ORDER BY end_time - start_time), INTERVAL '1 hour') AS duration
+  FROM time_slots
+  WHERE venue_id = v.id
+) AS s ON TRUE
+CROSS JOIN generate_series(0, 10) AS k(i)
+CROSS JOIN LATERAL (SELECT INTERVAL '10 hours' + k.i * (s.duration + INTERVAL '2 hours') AS start_offset) AS slot
+WHERE slot.start_offset + s.duration <= INTERVAL '21 hours'
+  AND abs(hashtext(v.id::text || day.d::text)) % 4 <> 0
+  AND abs(hashtext(v.id::text || day.d::text || k.i::text)) % 3 <> 0
+  AND NOT EXISTS (
+    SELECT 1 FROM time_slots AS t
+    WHERE t.venue_id = v.id
+      AND t.start_time < (day.d + slot.start_offset + s.duration) AT TIME ZONE v.timezone
+      AND t.end_time > (day.d + slot.start_offset) AT TIME ZONE v.timezone
+  );
+
 -- Seed customers can't log in: '!' is not a valid bcrypt hash, so no password matches it
 INSERT INTO users (id, email, name, password_hash) VALUES
   ('40000000-0000-4000-8000-000000000001', 'john@example.com', 'John Doe', '!'),
