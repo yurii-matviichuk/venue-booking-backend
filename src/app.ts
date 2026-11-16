@@ -1,16 +1,17 @@
 // Must stay the first import: ES modules run imports in order, and the database pool
 // reads DATABASE_URL when src/db/connection.ts loads, so dotenv has to run before it.
 import 'dotenv/config';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import express, { type Express, type Request, type Response, type NextFunction } from 'express';
-import authRouter from './routes/auth.js';
-import bookingRouter from './routes/booking.js';
-import venueRouter from './routes/venue.js';
-import cityRouter from './routes/city.js';
-import availabilityRouter from './routes/availability.js';
-import healthRouter from './routes/health.js';
+import cors from 'cors';
+import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import { AppError } from './errors.js';
+import authRouter from './routes/auth.js';
+import availabilityRouter from './routes/availability.js';
+import bookingRouter from './routes/booking.js';
+import cityRouter from './routes/city.js';
+import healthRouter from './routes/health.js';
+import ownerRouter from './routes/owner.js';
+import venueRouter from './routes/venue.js';
 
 export function createApp(): Express {
   const app = express();
@@ -31,6 +32,7 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/bookings', bookingRouter);
+  app.use('/api/owner', ownerRouter);
   app.use('/api/venues', venueRouter);
   app.use('/api/cities', cityRouter);
   app.use('/api/availability', availabilityRouter);

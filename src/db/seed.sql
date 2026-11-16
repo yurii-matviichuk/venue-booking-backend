@@ -2,36 +2,40 @@
 -- Run after schema.sql: psql -d venue_booking -f src/db/seed.sql
 -- Slot dates are written for 2026-10-20 as day 0 and shifted at the bottom of this file, so they are always upcoming.
 
+-- Public demo login for venue owners: owner@example.com / demo-password. The demo owner owns every seeded venue, so they are inserted first.
+INSERT INTO users (id, email, name, password_hash, role) VALUES
+  ('40000000-0000-4000-8000-000000000005', 'owner@example.com', 'Demo Owner', '$2b$12$LeCRelMyCS5EzRFuEpVMRum13rJ6isTJ6MetLACcjZhJnv6ZLyRHO', 'owner');
+
 -- image_file is only the file name: the frontend serves it from its public/images/venues/ folder
-INSERT INTO venues (id, name, address, city, timezone, category, description, image_file) VALUES
-  ('10000000-0000-4000-8000-000000000001', 'Bowling Alley Downtown', '100 Example Street', 'New York', 'America/New_York', 'Bowling', 'Classic lanes, shoe rental and a snack bar. Great for groups and birthdays.', 'bowling-alley.jpg'),
-  ('10000000-0000-4000-8000-000000000002', 'Darts Lounge', '110 Example Street', 'Chicago', 'America/Chicago', 'Darts', 'Relaxed lounge with electronic and steel-tip boards and a full bar.', 'darts-lounge.jpg'),
-  ('10000000-0000-4000-8000-000000000003', 'Escape Room Vault', '120 Example Street', 'New York', 'America/New_York', 'Escape Room', 'Crack the code of a bank heist before the clock runs out.', 'escape-room.jpg'),
-  ('10000000-0000-4000-8000-000000000004', 'Laser Tag Arena', '130 Example Street', 'Chicago', 'America/Chicago', 'Laser Tag', 'Two-level arena with fog, neon and team matches.', 'laser-tag.jpg'),
-  ('10000000-0000-4000-8000-000000000005', 'Retro Arcade Hall', '140 Example Street', 'Denver', 'America/Denver', 'Arcade', 'Over 80 vintage cabinets and pinball machines, all on free play.', 'retro-arcade.jpg'),
-  ('10000000-0000-4000-8000-000000000006', 'VR Zone', '150 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Virtual Reality', 'Step into immersive VR games, solo or with friends.', 'vr-zone.jpg'),
-  ('10000000-0000-4000-8000-000000000007', 'Racing Simulator Lounge', '160 Example Street', 'Chicago', 'America/Chicago', 'Racing', 'Full-motion race simulators with real pedals and wheels.', 'racing-simulator.jpg'),
-  ('10000000-0000-4000-8000-000000000008', 'Mini Golf Park', '170 Example Street', 'New York', 'America/New_York', 'Mini Golf', 'Eighteen themed holes by the river, fun for the whole family.', 'mini-golf.jpg'),
-  ('10000000-0000-4000-8000-000000000009', 'Go-Kart Speedway', '180 Example Street', 'Phoenix', 'America/Phoenix', 'Go-Karts', 'Fast electric karts on a timed outdoor track.', 'go-karts.jpg'),
-  ('10000000-0000-4000-8000-000000000010', 'Trampoline Jump Park', '190 Example Street', 'Chicago', 'America/Chicago', 'Trampoline Park', 'Wall-to-wall trampolines, foam pits and dodgeball courts.', 'trampoline-park.jpg'),
-  ('10000000-0000-4000-8000-000000000011', 'Bouldering Climbing Gym', '200 Example Street', 'Denver', 'America/Denver', 'Climbing', 'Routes for every level with coaching for beginners.', 'bouldering-gym.jpg'),
-  ('10000000-0000-4000-8000-000000000012', 'Billiards Pool Hall', '210 Example Street', 'New York', 'America/New_York', 'Billiards', 'Twelve pool tables in a laid-back hall with a bar.', 'billiards.jpg'),
-  ('10000000-0000-4000-8000-000000000013', 'Stage Nine Karaoke Bar', '220 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Karaoke', 'Private rooms and a main stage with 50,000 songs.', 'karaoke.jpg'),
-  ('10000000-0000-4000-8000-000000000014', 'Board Game Café', '230 Example Street', 'Chicago', 'America/Chicago', 'Board Games', 'Hundreds of board games, plus coffee, snacks and friendly staff to teach them.', 'board-games.jpg'),
-  ('10000000-0000-4000-8000-000000000015', 'Riverside Cinema', '240 Example Street', 'New York', 'America/New_York', 'Cinema', 'Independent films and new releases in a restored single-screen theater.', 'cinema.jpg'),
-  ('10000000-0000-4000-8000-000000000016', 'Live Music House', '250 Example Street', 'Chicago', 'America/Chicago', 'Live Music', 'Local and touring bands on a stage with a great sound system.', 'live-music.jpg'),
-  ('10000000-0000-4000-8000-000000000017', 'Laugh Track Comedy Club', '260 Example Street', 'New York', 'America/New_York', 'Comedy', 'Stand-up nights with headliners and open-mic newcomers.', 'comedy-club.jpg'),
-  ('10000000-0000-4000-8000-000000000018', 'Grand Playhouse', '270 Example Street', 'New York', 'America/New_York', 'Theater', 'A historic theater staging plays and musicals all season.', 'theater.jpg'),
-  ('10000000-0000-4000-8000-000000000019', 'Axe Lodge', '280 Example Street', 'Denver', 'America/Denver', 'Axe Throwing', 'Throwing lanes with a coach on hand, next to a craft brewery.', 'axe-throwing.jpg'),
-  ('10000000-0000-4000-8000-000000000020', 'Airsoft Field Outpost', '290 Example Street', 'Phoenix', 'America/Phoenix', 'Airsoft', 'Outdoor battlefield with bunkers, gear rental and game masters.', 'airsoft.jpg'),
-  ('10000000-0000-4000-8000-000000000021', 'Cooking Studio Kitchen', '300 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Cooking Class', 'Hands-on classes where you cook a full meal and then eat it.', 'cooking-studio.jpg'),
-  ('10000000-0000-4000-8000-000000000022', 'Clay and Wheel Pottery Studio', '310 Example Street', 'Chicago', 'America/Chicago', 'Pottery', 'Learn to throw a pot on the wheel and take your piece home.', 'pottery-studio.jpg'),
-  ('10000000-0000-4000-8000-000000000023', 'Paint and Sip Studio', '320 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Painting', 'Follow a guided painting lesson with a drink in hand.', 'paint-and-sip.jpg');
+INSERT INTO venues (id, owner_id, name, address, city, timezone, category, description, image_file) VALUES
+  ('10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000005', 'Bowling Alley Downtown', '100 Example Street', 'New York', 'America/New_York', 'Bowling', 'Classic lanes, shoe rental and a snack bar. Great for groups and birthdays.', 'bowling-alley.jpg'),
+  ('10000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000005', 'Darts Lounge', '110 Example Street', 'Chicago', 'America/Chicago', 'Darts', 'Relaxed lounge with electronic and steel-tip boards and a full bar.', 'darts-lounge.jpg'),
+  ('10000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000005', 'Escape Room Vault', '120 Example Street', 'New York', 'America/New_York', 'Escape Room', 'Crack the code of a bank heist before the clock runs out.', 'escape-room.jpg'),
+  ('10000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000005', 'Laser Tag Arena', '130 Example Street', 'Chicago', 'America/Chicago', 'Laser Tag', 'Two-level arena with fog, neon and team matches.', 'laser-tag.jpg'),
+  ('10000000-0000-4000-8000-000000000005', '40000000-0000-4000-8000-000000000005', 'Retro Arcade Hall', '140 Example Street', 'Denver', 'America/Denver', 'Arcade', 'Over 80 vintage cabinets and pinball machines, all on free play.', 'retro-arcade.jpg'),
+  ('10000000-0000-4000-8000-000000000006', '40000000-0000-4000-8000-000000000005', 'VR Zone', '150 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Virtual Reality', 'Step into immersive VR games, solo or with friends.', 'vr-zone.jpg'),
+  ('10000000-0000-4000-8000-000000000007', '40000000-0000-4000-8000-000000000005', 'Racing Simulator Lounge', '160 Example Street', 'Chicago', 'America/Chicago', 'Racing', 'Full-motion race simulators with real pedals and wheels.', 'racing-simulator.jpg'),
+  ('10000000-0000-4000-8000-000000000008', '40000000-0000-4000-8000-000000000005', 'Mini Golf Park', '170 Example Street', 'New York', 'America/New_York', 'Mini Golf', 'Eighteen themed holes by the river, fun for the whole family.', 'mini-golf.jpg'),
+  ('10000000-0000-4000-8000-000000000009', '40000000-0000-4000-8000-000000000005', 'Go-Kart Speedway', '180 Example Street', 'Phoenix', 'America/Phoenix', 'Go-Karts', 'Fast electric karts on a timed outdoor track.', 'go-karts.jpg'),
+  ('10000000-0000-4000-8000-000000000010', '40000000-0000-4000-8000-000000000005', 'Trampoline Jump Park', '190 Example Street', 'Chicago', 'America/Chicago', 'Trampoline Park', 'Wall-to-wall trampolines, foam pits and dodgeball courts.', 'trampoline-park.jpg'),
+  ('10000000-0000-4000-8000-000000000011', '40000000-0000-4000-8000-000000000005', 'Bouldering Climbing Gym', '200 Example Street', 'Denver', 'America/Denver', 'Climbing', 'Routes for every level with coaching for beginners.', 'bouldering-gym.jpg'),
+  ('10000000-0000-4000-8000-000000000012', '40000000-0000-4000-8000-000000000005', 'Billiards Pool Hall', '210 Example Street', 'New York', 'America/New_York', 'Billiards', 'Twelve pool tables in a laid-back hall with a bar.', 'billiards.jpg'),
+  ('10000000-0000-4000-8000-000000000013', '40000000-0000-4000-8000-000000000005', 'Stage Nine Karaoke Bar', '220 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Karaoke', 'Private rooms and a main stage with 50,000 songs.', 'karaoke.jpg'),
+  ('10000000-0000-4000-8000-000000000014', '40000000-0000-4000-8000-000000000005', 'Board Game Café', '230 Example Street', 'Chicago', 'America/Chicago', 'Board Games', 'Hundreds of board games, plus coffee, snacks and friendly staff to teach them.', 'board-games.jpg'),
+  ('10000000-0000-4000-8000-000000000015', '40000000-0000-4000-8000-000000000005', 'Riverside Cinema', '240 Example Street', 'New York', 'America/New_York', 'Cinema', 'Independent films and new releases in a restored single-screen theater.', 'cinema.jpg'),
+  ('10000000-0000-4000-8000-000000000016', '40000000-0000-4000-8000-000000000005', 'Live Music House', '250 Example Street', 'Chicago', 'America/Chicago', 'Live Music', 'Local and touring bands on a stage with a great sound system.', 'live-music.jpg'),
+  ('10000000-0000-4000-8000-000000000017', '40000000-0000-4000-8000-000000000005', 'Laugh Track Comedy Club', '260 Example Street', 'New York', 'America/New_York', 'Comedy', 'Stand-up nights with headliners and open-mic newcomers.', 'comedy-club.jpg'),
+  ('10000000-0000-4000-8000-000000000018', '40000000-0000-4000-8000-000000000005', 'Grand Playhouse', '270 Example Street', 'New York', 'America/New_York', 'Theater', 'A historic theater staging plays and musicals all season.', 'theater.jpg'),
+  ('10000000-0000-4000-8000-000000000019', '40000000-0000-4000-8000-000000000005', 'Axe Lodge', '280 Example Street', 'Denver', 'America/Denver', 'Axe Throwing', 'Throwing lanes with a coach on hand, next to a craft brewery.', 'axe-throwing.jpg'),
+  ('10000000-0000-4000-8000-000000000020', '40000000-0000-4000-8000-000000000005', 'Airsoft Field Outpost', '290 Example Street', 'Phoenix', 'America/Phoenix', 'Airsoft', 'Outdoor battlefield with bunkers, gear rental and game masters.', 'airsoft.jpg'),
+  ('10000000-0000-4000-8000-000000000021', '40000000-0000-4000-8000-000000000005', 'Cooking Studio Kitchen', '300 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Cooking Class', 'Hands-on classes where you cook a full meal and then eat it.', 'cooking-studio.jpg'),
+  ('10000000-0000-4000-8000-000000000022', '40000000-0000-4000-8000-000000000005', 'Clay and Wheel Pottery Studio', '310 Example Street', 'Chicago', 'America/Chicago', 'Pottery', 'Learn to throw a pot on the wheel and take your piece home.', 'pottery-studio.jpg'),
+  ('10000000-0000-4000-8000-000000000023', '40000000-0000-4000-8000-000000000005', 'Paint and Sip Studio', '320 Example Street', 'Los Angeles', 'America/Los_Angeles', 'Painting', 'Follow a guided painting lesson with a drink in hand.', 'paint-and-sip.jpg');
 
 INSERT INTO time_slots (id, venue_id, start_time, end_time, price, capacity, booked) VALUES
-  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '2026-10-20T10:00:00Z', '2026-10-20T11:00:00Z', 25.00, 4, 2),
+  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '2026-10-20T10:00:00Z', '2026-10-20T11:00:00Z', 25.00, 4, 0),
   ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '2026-10-20T14:00:00Z', '2026-10-20T15:00:00Z', 25.00, 4, 0),
-  ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000002', '2026-10-20T18:00:00Z', '2026-10-20T19:00:00Z', 30.00, 6, 3);
+  ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000002', '2026-10-20T18:00:00Z', '2026-10-20T19:00:00Z', 30.00, 6, 0);
 
 -- New venues get different slot counts, days, local hours, durations and weekend prices. Nothing is booked yet.
 INSERT INTO time_slots (venue_id, start_time, end_time, price, capacity, booked) VALUES
@@ -146,13 +150,6 @@ WHERE slot.start_offset + s.duration <= INTERVAL '21 hours'
       AND t.end_time > (day.d + slot.start_offset) AT TIME ZONE v.timezone
   );
 
--- Seed customers can't log in: '!' is not a valid bcrypt hash, so no password matches it
+-- Public demo login for portfolio visitors: demo@example.com / demo-password (bcrypt, 12 rounds)
 INSERT INTO users (id, email, name, password_hash) VALUES
-  ('40000000-0000-4000-8000-000000000001', 'john@example.com', 'John Doe', '!'),
-  ('40000000-0000-4000-8000-000000000002', 'jane@example.com', 'Jane Smith', '!'),
-  ('40000000-0000-4000-8000-000000000003', 'bob@example.com', 'Bob Johnson', '!');
-
-INSERT INTO bookings (id, time_slot_id, venue_id, user_id, customer_name, customer_email, status) VALUES
-  ('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'John Doe', 'john@example.com', 'confirmed'),
-  ('30000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000002', 'Jane Smith', 'jane@example.com', 'confirmed'),
-  ('30000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000003', 'Bob Johnson', 'bob@example.com', 'pending');
+  ('40000000-0000-4000-8000-000000000004', 'demo@example.com', 'Demo User', '$2b$12$a.FN4.hOBSAtzpr.zx1YWeTomZt6JdjhK2WCnq0t/4X/njewhtxiW');

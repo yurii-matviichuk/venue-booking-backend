@@ -1,5 +1,17 @@
+-- Roles: customers book, an owner confirms or cancels bookings at their venues
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'owner')),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Every venue has exactly one owner; one owner can have several venues
 CREATE TABLE venues (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES users(id),
   name VARCHAR(255) NOT NULL,
   address VARCHAR(255) NOT NULL,
   city VARCHAR(100) NOT NULL,
@@ -18,15 +30,6 @@ CREATE TABLE time_slots (
   price DECIMAL(10, 2) NOT NULL,
   capacity INTEGER NOT NULL,
   booked INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) NOT NULL UNIQUE,
-  name VARCHAR(255) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(20) NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -50,3 +53,11 @@ CREATE TABLE bookings (
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes on the foreign keys: the app filters and joins on these columns
+CREATE INDEX venues_owner_id_idx ON venues (owner_id);
+CREATE INDEX time_slots_venue_id_idx ON time_slots (venue_id);
+CREATE INDEX sessions_user_id_idx ON sessions (user_id);
+CREATE INDEX bookings_time_slot_id_idx ON bookings (time_slot_id);
+CREATE INDEX bookings_venue_id_idx ON bookings (venue_id);
+CREATE INDEX bookings_user_id_idx ON bookings (user_id);

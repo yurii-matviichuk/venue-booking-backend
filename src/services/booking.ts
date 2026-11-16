@@ -102,15 +102,17 @@ export const createBooking = async (user: User, data: CreateBookingInput): Promi
   });
 };
 
-// The current user's bookings, soonest slot first
-export const listBookingsForUser = async (userId: string): Promise<BookingDetails[]> => {
-  const result = await query<BookingDetailsRow>(
-    `SELECT b.id, b.venue_id, b.time_slot_id, b.spots, b.customer_name, b.customer_email, b.status,
+const DETAILS_SELECT = `SELECT b.id, b.venue_id, b.time_slot_id, b.spots, b.customer_name, b.customer_email, b.status,
             s.price, b.created_at, b.updated_at,
             v.name AS venue_name, v.address AS venue_address, v.city AS venue_city, v.timezone AS venue_timezone, s.start_time, s.end_time
      FROM bookings b
      JOIN time_slots s ON s.id = b.time_slot_id
-     JOIN venues v ON v.id = b.venue_id
+     JOIN venues v ON v.id = b.venue_id`;
+
+// The current user's bookings, soonest slot first
+export const listBookingsForUser = async (userId: string): Promise<BookingDetails[]> => {
+  const result = await query<BookingDetailsRow>(
+    `${DETAILS_SELECT}
      WHERE b.user_id = $1
      ORDER BY s.start_time, b.id`,
     [userId],
@@ -118,8 +120,21 @@ export const listBookingsForUser = async (userId: string): Promise<BookingDetail
   return result.rows.map(toBookingDetails);
 };
 
-// Customers can only cancel their own bookings; admins can set any status on any booking.
+// Bookings at the venues this owner owns. Pending ones come first, since those need an answer
+export const listBookingsForOwner = async (ownerId: string): Promise<BookingDetails[]> => {
+  const result = await query<BookingDetailsRow>(
+    `${DETAILS_SELECT}
+     WHERE v.owner_id = $1
+     ORDER BY (b.status = 'pending') DESC, s.start_time, b.id`,
+    [ownerId],
+  );
+  return result.rows.map(toBookingDetails);
+};
+
+// Customers can only cancel their own bookings. An owner can confirm or cancel bookings at the
+// venues they own.
 // A cancelled booking is final, and cancelling gives the spots back to the slot.
+// Nobody can confirm a booking whose slot has already started.
 export const updateBookingStatus = async (
   user: User,
   bookingId: string,
@@ -130,25 +145,37 @@ export const updateBookingStatus = async (
 
   return withTransaction(async (client) => {
     // FOR UPDATE locks the row, so two simultaneous cancels can't both give the spot back
-    const found = await client.query<BookingRow & { user_id: string }>(
-      `SELECT b.id, b.venue_id, b.time_slot_id, b.spots, b.user_id, b.customer_name, b.customer_email,
-              b.status, s.price, b.created_at, b.updated_at
+    const found = await client.query<
+      BookingRow & { user_id: string; owner_id: string; started: boolean }
+    >(
+      `SELECT b.id, b.venue_id, b.time_slot_id, b.spots, b.user_id, v.owner_id, b.customer_name,
+              b.customer_email, b.status, s.price, b.created_at, b.updated_at,
+              s.start_time <= CURRENT_TIMESTAMP AS started
        FROM bookings b
        JOIN time_slots s ON s.id = b.time_slot_id
+       JOIN venues v ON v.id = b.venue_id
        WHERE b.id = $1
        FOR UPDATE OF b`,
       [bookingId],
     );
     const booking = found.rows[0];
-    const isAdmin = user.role === 'admin';
+    const canManage = user.role === 'owner' && booking?.owner_id === user.id;
 
     // Other people's bookings look the same as missing ones, so ids can't be probed
-    if (!booking || (!isAdmin && booking.user_id !== user.id)) {
+    if (!booking || (!canManage && booking.user_id !== user.id)) {
       throw new AppError('BOOKING_NOT_FOUND');
     }
-    if (!isAdmin && status !== 'cancelled') throw new AppError('FORBIDDEN');
+
+    const allowedStatuses: Booking['status'][] = canManage
+      ? ['confirmed', 'cancelled']
+      : ['cancelled'];
+    if (!allowedStatuses.includes(status)) throw new AppError('FORBIDDEN');
     if (booking.status === 'cancelled' || booking.status === status) {
       throw new AppError('INVALID_STATUS_CHANGE');
+    }
+    // A booking can't be accepted once its time has come. Cancelling stays possible
+    if (status === 'confirmed' && booking.started) {
+      throw new AppError('SLOT_ALREADY_STARTED');
     }
 
     if (status === 'cancelled') {

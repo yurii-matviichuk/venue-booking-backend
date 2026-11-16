@@ -49,7 +49,7 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'owner';
   createdAt: string;
 };
 
