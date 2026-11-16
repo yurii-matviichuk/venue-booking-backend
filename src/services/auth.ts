@@ -1,9 +1,9 @@
-import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
-import type { User } from '../types/models.js';
-import type { LoginInput, RegisterInput } from '../validation/schemas.js';
+import { createHash, randomBytes } from 'node:crypto';
 import { query } from '../db/connection.js';
 import { AppError } from '../errors.js';
+import type { User } from '../types/models.js';
+import type { LoginInput, RegisterInput } from '../validation/schemas.js';
 
 export const AUTH_COOKIE = 'token';
 export const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;

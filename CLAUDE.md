@@ -1,58 +1,67 @@
-# CLAUDE.md
+# Venue Booking API
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+REST API for a venue booking app. Venues offer time slots, each with a capacity and a price per spot. Customers browse venues by city, pick a slot and book spots; venue owners see and manage bookings at their own venues. Each booking is checked against the slot's capacity inside a SQL transaction, so concurrent bookings can't overbook a slot. It is a portfolio demo: all data is fictional.
 
 ## Commands
 
-- `npm run dev` — run the server with hot reload via `tsx` (reads `src/server.ts` directly, no build step)
-- `npm run build` — type-check and compile to `dist/` via `tsc`
-- `npm start` — run the compiled server from `dist/server.js` (requires `npm run build` first)
-- There is no test suite yet (`npm test` is a placeholder that exits with an error)
-- Server port is read from `PORT` env var (`.env`), defaulting to 5001
+- `docker compose up -d` — start PostgreSQL; creates the tables from `src/db/schema.sql` on an empty volume
+- `docker compose cp src/db/seed.sql postgres:/tmp/seed.sql` then `docker compose exec postgres psql -U venue_user -d venue_booking -f /tmp/seed.sql` — load sample data
+- `docker compose down -v` — reset the database (deletes all data); needed after changing `schema.sql`
 
-## Architecture
+- `npm run dev` — run the server with hot reload (`tsx watch`)
+- `npm test` — run the integration tests (PostgreSQL must be running)
+- `npm run format:check` — check Prettier formatting
 
-This is a Node.js/Express REST API for booking venues (bowling alleys, darts lounges, etc.), written in TypeScript with ESM modules (`"type": "module"` in package.json, `module`/`moduleResolution` set to `NodeNext` in tsconfig). Because of `NodeNext`, relative imports must include the `.js` extension (e.g. `import { createApp } from './app.js'`) even though the source files are `.ts`; `tsc` rejects a missing extension, and plain Node would fail to load it at runtime.
+The pre-commit hook runs `npm run lint && npm run build`. It does not run Prettier or the tests.
 
-The application follows a **layered architecture** for clean separation of concerns:
+## Structure
 
-1. **Routes** (`src/routes/`) — Express Router definitions; route mounting happens in `src/app.ts`
-2. **Controllers** (`src/controllers/`) — HTTP request/response handling; Zod validation of request bodies and parameters
-3. **Services** (`src/services/`) — Pure business logic; independent of HTTP; handles core operations like booking creation, status updates, and availability computation
-4. **Types** (`src/types/models.ts`) — Centralized domain type definitions (TypeScript types, not runtime values)
-5. **Validation** (`src/validation/schemas.ts`) — Zod schemas for request validation
-6. **Database** (`src/db/`) — PostgreSQL via `pg`; `schema.sql` creates tables, `seed.sql` loads dev sample data (run it separately; future-dated slots needed for the demo)
+- `src/routes/` defines routes only; they are mounted in `src/app.ts`
+- `src/middleware/` holds `requireAuth` and `requireRole`
+- `src/controllers/` handles HTTP request and response, plus Zod validation
+- `src/services/` holds business logic and all SQL; it must not import Express types
+- The seed has no bookings, only a demo customer and a demo owner who owns every venue
 
-Domain model:
+Keep this layering.
 
-- **Venue**: `id`, `name`, `location`, `city`, `timezone`
-- **TimeSlot**: `id`, `venueId`, `startTime`/`endTime` (ISO 8601), `price`, `capacity`, `booked` (count)
-- **Booking**: created by a logged-in user for a venue + slot, with a `status` of `pending` | `confirmed` | `cancelled`
+## Conventions
 
-Routes (all under `/api` except `/health`):
+- Relative imports must end in `.js` (e.g. `import { createApp } from './app.js'`) even though the files are `.ts` (`NodeNext`).
+- `import 'dotenv/config'` must stay the first import in `src/app.ts`: the pool in `src/db/connection.ts` reads `DATABASE_URL` when it loads.
+- Use parameterized queries (`$1`, `$2`).
+- Map snake_case columns to camelCase in the service's `to...` functions (`toBooking`, `toUser`), not in controllers.
+- Add every new error to `errorDefinitions` in `src/errors.ts` (stable `code`, HTTP status, message) and throw `AppError` with that code. Error responses are `{ error, code, details? }`.
+- Check path ids with `isUuid` before querying: Postgres throws on a malformed UUID. Treat a bad id as not found.
+- `pg` returns `DECIMAL` columns (prices) as strings; convert them with `Number()`.
+- A booking's customer name and email come from the logged-in user, never from the request body.
+- Roles are `customer` and `owner`. Every venue has exactly one owner (`owner_id`, `NOT NULL`). Only `updateBookingStatus` decides who may set which status; keep that rule in the service, not in routes.
+- Capacity is taken by one conditional `UPDATE` inside `withTransaction` (`services/booking.ts`) that adds the booking's `spots` to `booked` only if they fit, and cancelling gives all of them back under `FOR UPDATE`. A slot's `price` is per spot.
+- The session cookie is `SameSite=None; Secure` in production (frontend and API on different domains) and `SameSite=Lax` locally.
 
-- `GET /health` — liveness check
-- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` — cookie-session auth (`me` requires login)
-- `GET /api/cities` — cities that have venues (public)
-- `GET /api/venues?city=` — list venues, optionally for one city (public)
-- `GET /api/venues/:id` — single venue (public)
-- `GET /api/availability/:venueId` — upcoming time slots for a venue with `available`/`spotsRemaining` (public)
-- `GET /api/bookings` — the logged-in user's bookings as `{ bookings }` (requires login)
-- `POST /api/bookings` — book a slot as the logged-in user; capacity is taken atomically in a transaction
-- `PUT /api/bookings/:id` — update status; customers may only cancel their own booking, admins may set any status; cancelled is final and frees the spot
-- Unmatched routes fall through to a catch-all 404 JSON handler in `src/app.ts`
+## Things to avoid
 
-Error handling:
+- Don't put SQL in controllers.
+- Don't build SQL strings from user input.
+- Don't change an API response shape without updating the client that consumes it.
+- Don't return 403 for another user's booking; return 404 so ids can't be probed.
+- Don't weaken the booking transaction logic without keeping the concurrency test in `tests/bookings.test.ts` passing.
+- Don't change `schema.sql` without updating `seed.sql` to match.
+- Don't commit `.env` files or credentials.
 
-- **400 Bad Request** — validation errors (Zod) or invalid actions (e.g., slot already started)
-- **401/403** — not logged in / not allowed
-- **409 Conflict** — slot fully booked, email already registered
-- **404 Not Found** — resource not found (booking, slot, or venue does not exist)
-- **500 Internal Server Error** — unexpected errors caught by global error middleware
+## Environment
 
-Development setup:
+Copy `.env.example` to `.env` (gitignored). `DATABASE_URL` is required. `CLIENT_URL` (required in production) is the client origin allowed by CORS and must match exactly, including the port, or the session cookie is not sent.
 
-- **Husky** (`npm prepare` script) automatically installs git hooks
-- **Pre-commit hook** (`.husky/pre-commit`) runs `npm run lint && npm run build` before each commit
-- **Prettier** is configured but runs on-save in VS Code (not in pre-commit hook) to keep startup fast
-- **TypeScript** is in `devDependencies` (development/build-time only)
+## Testing
+
+Integration tests live in `tests/` and run against a real PostgreSQL, because the booking rules live in SQL transactions. Don't mock the database.
+
+- Tests use a separate database, `venue_booking_test` (override with `TEST_DATABASE_URL`). `tests/globalSetup.ts` creates it and rebuilds the tables from `schema.sql` on every run, and refuses to run if the name doesn't end in `_test`.
+- Test files share one database and run one after another. Call `resetDb()` in `beforeEach`.
+- Reuse the helpers in `tests/helpers.ts` instead of writing setup by hand.
+- `tests/` is not covered by `tsc` (outside `tsconfig.json`'s `include`); ESLint and Prettier do cover it.
+
+## Known limitations
+
+- Owners can only be created in the database (the seed has a demo owner); there is no API or UI for creating them.
+- No migration tooling: a schema change means resetting the database. `src/db/migrations/` is empty.

@@ -1,15 +1,21 @@
 import { type Request, type Response } from 'express';
-import type { User } from '../types/models.js';
-import { loginSchema, registerSchema } from '../validation/schemas.js';
+import { AppError } from '../errors.js';
 import * as authService from '../services/auth.js';
 import { AUTH_COOKIE, SESSION_TTL_SECONDS } from '../services/auth.js';
-import { AppError } from '../errors.js';
+import type { User } from '../types/models.js';
+import { loginSchema, registerSchema } from '../validation/schemas.js';
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Cross-site cookies (frontend and API on different domains) need SameSite=None, which requires Secure.
+// Local development is same-site over plain HTTP, so it uses Lax
+const sameSite: 'none' | 'lax' = isProduction ? 'none' : 'lax';
 
 // The session token lives in an httpOnly cookie, so page scripts can't read it
 const cookieOptions = {
   httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
+  sameSite,
+  secure: isProduction,
   path: '/',
 };
 
@@ -42,6 +48,7 @@ export const login = async (req: Request, res: Response<{ user: User }>) => {
   }
 
   const user = await authService.login(validation.data);
+
   await setAuthCookie(res, user.id);
 
   return res.json({ user });
