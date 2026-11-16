@@ -1,5 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { query } from '../src/db/connection.js';
+import { purgeExpiredSessions } from '../src/services/auth.js';
 import { app, registerUser, resetDb } from './helpers.js';
 
 beforeEach(resetDb);
@@ -118,6 +120,24 @@ describe('sessions', () => {
     // The server deleted the session, so the copied cookie no longer works
     expect((await request(app).get('/api/auth/me').set('Cookie', cookie)).status).toBe(401);
     // A different session of the same user is not affected
+    expect((await agent.get('/api/auth/me')).status).toBe(200);
+  });
+});
+
+describe('purgeExpiredSessions', () => {
+  it('deletes only expired sessions', async () => {
+    // Registering creates one valid session
+    const { agent, user } = await registerUser();
+    await query(
+      `INSERT INTO sessions (token_hash, user_id, expires_at)
+       VALUES (repeat('a', 64), $1, CURRENT_TIMESTAMP - interval '1 minute')`,
+      [user.id],
+    );
+
+    expect(await purgeExpiredSessions()).toBe(1);
+
+    const remaining = await query('SELECT token_hash FROM sessions');
+    expect(remaining.rowCount).toBe(1);
     expect((await agent.get('/api/auth/me')).status).toBe(200);
   });
 });

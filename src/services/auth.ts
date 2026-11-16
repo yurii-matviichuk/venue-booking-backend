@@ -92,3 +92,9 @@ export const findUserBySessionToken = async (token: string): Promise<User | null
 export const deleteSession = async (token: string): Promise<void> => {
   await query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(token)]);
 };
+
+// Removes sessions that can no longer be used; returns how many were deleted
+export const purgeExpiredSessions = async (): Promise<number> => {
+  const result = await query('DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP');
+  return result.rowCount ?? 0;
+};

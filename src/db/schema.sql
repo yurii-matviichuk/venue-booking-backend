@@ -58,6 +58,7 @@ CREATE TABLE bookings (
 CREATE INDEX venues_owner_id_idx ON venues (owner_id);
 CREATE INDEX time_slots_venue_id_idx ON time_slots (venue_id);
 CREATE INDEX sessions_user_id_idx ON sessions (user_id);
+CREATE INDEX sessions_expires_at_idx ON sessions (expires_at);
 CREATE INDEX bookings_time_slot_id_idx ON bookings (time_slot_id);
 CREATE INDEX bookings_venue_id_idx ON bookings (venue_id);
 CREATE INDEX bookings_user_id_idx ON bookings (user_id);
