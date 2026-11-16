@@ -68,7 +68,11 @@ Asking for a status you aren't allowed to set (for example a customer confirming
 
 **Other people's bookings return 404, not 403.** A booking you can't access looks exactly like one that doesn't exist (`BOOKING_NOT_FOUND`), so ids can't be probed to find out which ones exist. The 403 above applies only to a booking you _can_ access when you ask for a status you may not set.
 
-## 5. Smaller gotchas
+## 5. Sessions and cleanup
+
+Expired sessions are rejected on every lookup (`findUserBySessionToken` only matches `expires_at > now`), so an expired token never works even while its row still exists. The rows are deleted by a background job (`src/jobs/sessionCleanup.ts`), started from `server.ts`. It purges once at startup and then hourly. The startup run matters because a host that restarts more often than hourly would otherwise never reach the first timer tick. With several instances each one purges, which is redundant but harmless.
+
+## 6. Smaller gotchas
 
 - **Customer name and email** come from the logged-in user, never from the request body. A name or email sent in the body is ignored.
 - **Malformed ids.** Postgres throws on a malformed UUID, so ids are checked with `isUuid` before querying, and a bad id is treated as not found.

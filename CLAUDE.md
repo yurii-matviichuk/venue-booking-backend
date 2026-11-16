@@ -20,6 +20,7 @@ The pre-commit hook runs `npm run lint && npm run build`. It does not run Pretti
 - `src/middleware/` holds `requireAuth` and `requireRole`
 - `src/controllers/` handles HTTP request and response, plus Zod validation
 - `src/services/` holds business logic and all SQL; it must not import Express types
+- `src/jobs/` holds background jobs (expired-session cleanup). Start them from `src/server.ts`, never `src/app.ts`, or tests would start the timers
 - The seed has no bookings, only a demo customer and a demo owner who owns every venue
 
 Keep this layering.

@@ -145,6 +145,7 @@ src/
 ├── middleware/     # requireAuth and requireRole: reject requests without the right user
 ├── controllers/    # HTTP request/response handling, with Zod validation
 ├── services/       # Business logic, independent of HTTP
+├── jobs/           # Background jobs started from server.ts (hourly expired-session cleanup)
 ├── validation/     # Zod schemas for API requests
 ├── types/          # Domain types (Venue, TimeSlot, Booking, User, etc.)
 └── db/             # PostgreSQL pool, schema.sql, seed.sql
