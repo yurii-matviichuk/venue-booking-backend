@@ -19,7 +19,9 @@ type BookingRow = {
 
 type BookingDetailsRow = BookingRow & {
   venue_name: string;
-  venue_location: string;
+  venue_address: string;
+  venue_city: string;
+  venue_timezone: string;
   start_time: Date;
   end_time: Date;
 };
@@ -40,7 +42,9 @@ const toBooking = (row: BookingRow): Booking => ({
 const toBookingDetails = (row: BookingDetailsRow): BookingDetails => ({
   ...toBooking(row),
   venueName: row.venue_name,
-  venueLocation: row.venue_location,
+  venueAddress: row.venue_address,
+  venueCity: row.venue_city,
+  venueTimezone: row.venue_timezone,
   startTime: row.start_time.toISOString(),
   endTime: row.end_time.toISOString(),
 });
@@ -101,7 +105,7 @@ export const listBookingsForUser = async (userId: string): Promise<BookingDetail
   const result = await query<BookingDetailsRow>(
     `SELECT b.id, b.venue_id, b.time_slot_id, b.customer_name, b.customer_email, b.status,
             s.price, b.created_at, b.updated_at,
-            v.name AS venue_name, v.location AS venue_location, s.start_time, s.end_time
+            v.name AS venue_name, v.address AS venue_address, v.city AS venue_city, v.timezone AS venue_timezone, s.start_time, s.end_time
      FROM bookings b
      JOIN time_slots s ON s.id = b.time_slot_id
      JOIN venues v ON v.id = b.venue_id

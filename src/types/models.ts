@@ -1,13 +1,16 @@
 export type Venue = {
   id: string;
   name: string;
-  location: string;
+  address: string;
   city: string;
   timezone: string;
   category: string;
   description: string;
   imageFile: string | null;
 };
+
+// A venue in the list: also the lowest price per spot among its upcoming slots (null if it has none)
+export type VenueListItem = Venue & { minPricePerSpot: number | null };
 
 export type TimeSlot = {
   id: string;
@@ -34,7 +37,9 @@ export type Booking = {
 // A booking with the venue and slot details a customer needs to recognise it
 export type BookingDetails = Booking & {
   venueName: string;
-  venueLocation: string;
+  venueAddress: string;
+  venueCity: string;
+  venueTimezone: string;
   startTime: string;
   endTime: string;
 };

@@ -1,10 +1,10 @@
 import { type Request, type Response } from 'express';
-import type { Venue } from '../types/models.js';
+import type { Venue, VenueListItem } from '../types/models.js';
 import { venueQuerySchema } from '../validation/schemas.js';
 import * as venueService from '../services/venue.js';
 import { AppError } from '../errors.js';
 
-export const getAll = async (req: Request, res: Response<Venue[]>) => {
+export const getAll = async (req: Request, res: Response<VenueListItem[]>) => {
   const validation = venueQuerySchema.safeParse(req.query);
 
   if (!validation.success) {
