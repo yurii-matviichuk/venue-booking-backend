@@ -26,6 +26,7 @@ export type Booking = {
   id: string;
   venueId: string;
   slotId: string;
+  spots: number;
   customerName: string;
   customerEmail: string;
   status: 'pending' | 'confirmed' | 'cancelled';

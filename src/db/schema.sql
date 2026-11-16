@@ -43,6 +43,7 @@ CREATE TABLE bookings (
   time_slot_id UUID NOT NULL REFERENCES time_slots(id) ON DELETE CASCADE,
   venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id),
+  spots INTEGER NOT NULL DEFAULT 1 CHECK (spots >= 1),
   customer_name VARCHAR(255) NOT NULL,
   customer_email VARCHAR(255) NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled')),

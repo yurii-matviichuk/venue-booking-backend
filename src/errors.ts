@@ -6,6 +6,7 @@ const errorDefinitions = {
   VALIDATION_FAILED: { status: 400, message: 'Validation failed' },
   EMAIL_TAKEN: { status: 409, message: 'Email is already registered' },
   SLOT_FULLY_BOOKED: { status: 409, message: 'Slot is fully booked' },
+  NOT_ENOUGH_SPOTS: { status: 409, message: 'Not enough spots left in this slot' },
   INVALID_CREDENTIALS: { status: 401, message: 'Invalid email or password' },
   UNAUTHORIZED: { status: 401, message: 'Authentication required' },
   FORBIDDEN: { status: 403, message: 'You do not have permission to do this' },

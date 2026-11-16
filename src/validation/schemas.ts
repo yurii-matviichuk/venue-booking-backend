@@ -31,6 +31,11 @@ export const loginSchema = z.object({
 export const createBookingSchema = z.object({
   venueId: z.uuid('Venue ID must be a valid UUID'),
   slotId: z.uuid('Slot ID must be a valid UUID'),
+  spots: z
+    .number('Spots must be a number')
+    .int('Spots must be a whole number')
+    .min(1, 'Book at least 1 spot')
+    .default(1),
 });
 
 export const updateBookingStatusSchema = z.object({

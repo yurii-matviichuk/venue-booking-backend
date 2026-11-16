@@ -9,6 +9,7 @@ type BookingRow = {
   id: string;
   venue_id: string;
   time_slot_id: string;
+  spots: number;
   customer_name: string;
   customer_email: string;
   status: Booking['status'];
@@ -30,6 +31,7 @@ const toBooking = (row: BookingRow): Booking => ({
   id: row.id,
   venueId: row.venue_id,
   slotId: row.time_slot_id,
+  spots: row.spots,
   customerName: row.customer_name,
   customerEmail: row.customer_email,
   status: row.status,
@@ -65,36 +67,36 @@ const withTransaction = async <T>(fn: (client: PoolClient) => Promise<T>): Promi
   }
 };
 
-// Throws AppError when the slot doesn't exist for this venue, has started, or is full
+// Throws AppError when the slot doesn't exist for this venue, has started, or has too few spots left
 export const createBooking = async (user: User, data: CreateBookingInput): Promise<Booking> => {
   return withTransaction(async (client) => {
-    // One conditional UPDATE both checks capacity and takes the spot, so two people
-    // booking the last spot at the same time can't both succeed
+    // One conditional UPDATE both checks capacity and takes the spots, so two people
+    // booking the last spots at the same time can't both succeed
     const taken = await client.query<{ price: string }>(
-      `UPDATE time_slots SET booked = booked + 1
-       WHERE id = $1 AND venue_id = $2 AND booked < capacity AND start_time > CURRENT_TIMESTAMP
+      `UPDATE time_slots SET booked = booked + $3
+       WHERE id = $1 AND venue_id = $2 AND booked + $3 <= capacity AND start_time > CURRENT_TIMESTAMP
        RETURNING price`,
-      [data.slotId, data.venueId],
+      [data.slotId, data.venueId, data.spots],
     );
 
     if (taken.rowCount === 0) {
       // Nothing was updated: work out why, so the client gets the right error
-      const slot = await client.query<{ full: boolean; started: boolean }>(
-        `SELECT booked >= capacity AS full, start_time <= CURRENT_TIMESTAMP AS started
+      const slot = await client.query<{ remaining: number; started: boolean }>(
+        `SELECT capacity - booked AS remaining, start_time <= CURRENT_TIMESTAMP AS started
          FROM time_slots WHERE id = $1 AND venue_id = $2`,
         [data.slotId, data.venueId],
       );
       if (!slot.rows[0]) throw new AppError('SLOT_NOT_FOUND');
       if (slot.rows[0].started) throw new AppError('SLOT_ALREADY_STARTED');
-      throw new AppError('SLOT_FULLY_BOOKED');
+      throw new AppError(slot.rows[0].remaining <= 0 ? 'SLOT_FULLY_BOOKED' : 'NOT_ENOUGH_SPOTS');
     }
 
     const inserted = await client.query<BookingRow>(
-      `INSERT INTO bookings (time_slot_id, venue_id, user_id, customer_name, customer_email)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, venue_id, time_slot_id, customer_name, customer_email, status,
-                 $6::numeric AS price, created_at, updated_at`,
-      [data.slotId, data.venueId, user.id, user.name, user.email, taken.rows[0].price],
+      `INSERT INTO bookings (time_slot_id, venue_id, user_id, spots, customer_name, customer_email)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, venue_id, time_slot_id, spots, customer_name, customer_email, status,
+                 $7::numeric AS price, created_at, updated_at`,
+      [data.slotId, data.venueId, user.id, data.spots, user.name, user.email, taken.rows[0].price],
     );
     return toBooking(inserted.rows[0]);
   });
@@ -103,7 +105,7 @@ export const createBooking = async (user: User, data: CreateBookingInput): Promi
 // The current user's bookings, soonest slot first
 export const listBookingsForUser = async (userId: string): Promise<BookingDetails[]> => {
   const result = await query<BookingDetailsRow>(
-    `SELECT b.id, b.venue_id, b.time_slot_id, b.customer_name, b.customer_email, b.status,
+    `SELECT b.id, b.venue_id, b.time_slot_id, b.spots, b.customer_name, b.customer_email, b.status,
             s.price, b.created_at, b.updated_at,
             v.name AS venue_name, v.address AS venue_address, v.city AS venue_city, v.timezone AS venue_timezone, s.start_time, s.end_time
      FROM bookings b
@@ -117,7 +119,7 @@ export const listBookingsForUser = async (userId: string): Promise<BookingDetail
 };
 
 // Customers can only cancel their own bookings; admins can set any status on any booking.
-// A cancelled booking is final, and cancelling gives the spot back to the slot.
+// A cancelled booking is final, and cancelling gives the spots back to the slot.
 export const updateBookingStatus = async (
   user: User,
   bookingId: string,
@@ -129,7 +131,7 @@ export const updateBookingStatus = async (
   return withTransaction(async (client) => {
     // FOR UPDATE locks the row, so two simultaneous cancels can't both give the spot back
     const found = await client.query<BookingRow & { user_id: string }>(
-      `SELECT b.id, b.venue_id, b.time_slot_id, b.user_id, b.customer_name, b.customer_email,
+      `SELECT b.id, b.venue_id, b.time_slot_id, b.spots, b.user_id, b.customer_name, b.customer_email,
               b.status, s.price, b.created_at, b.updated_at
        FROM bookings b
        JOIN time_slots s ON s.id = b.time_slot_id
@@ -150,15 +152,16 @@ export const updateBookingStatus = async (
     }
 
     if (status === 'cancelled') {
-      await client.query('UPDATE time_slots SET booked = booked - 1 WHERE id = $1', [
+      await client.query('UPDATE time_slots SET booked = booked - $2 WHERE id = $1', [
         booking.time_slot_id,
+        booking.spots,
       ]);
     }
 
     const updated = await client.query<BookingRow>(
       `UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2
-       RETURNING id, venue_id, time_slot_id, customer_name, customer_email, status,
+       RETURNING id, venue_id, time_slot_id, spots, customer_name, customer_email, status,
                  $3::numeric AS price, created_at, updated_at`,
       [status, bookingId, booking.price],
     );
