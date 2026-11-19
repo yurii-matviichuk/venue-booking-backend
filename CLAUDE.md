@@ -4,10 +4,10 @@ REST API for a venue booking app. Venues offer time slots, each with a capacity 
 
 ## Commands
 
-- `docker compose up -d` — start PostgreSQL; creates the tables from `src/db/schema.sql` on an empty volume
+- `docker compose up -d` — start PostgreSQL (empty); then `npm run migrate` creates the tables
 - `docker compose cp src/db/seed.sql postgres:/tmp/seed.sql` then `docker compose exec postgres psql -U venue_user -d venue_booking -f /tmp/seed.sql` — load sample data
-- `docker compose down -v` — reset the database (deletes all data); needed after changing `schema.sql`
-
+- `docker compose down -v` — reset the database (deletes all data); run `npm run migrate` again afterwards
+- `npm run migrate` — apply pending migrations (`node-pg-migrate`, reads `DATABASE_URL`); `npm run migrate:create <name>` — add a SQL migration
 - `npm run dev` — run the server with hot reload (`tsx watch`)
 - `npm test` — run the integration tests (PostgreSQL must be running)
 - `npm run format:check` — check Prettier formatting
@@ -47,7 +47,7 @@ Keep this layering.
 - Don't change an API response shape without updating the client that consumes it.
 - Don't return 403 for another user's booking; return 404 so ids can't be probed.
 - Don't weaken the booking transaction logic without keeping the concurrency test in `tests/bookings.test.ts` passing.
-- Don't change `schema.sql` without updating `seed.sql` to match.
+- Never edit a migration that has been merged; add a new one (`npm run migrate:create <name>`). Update `seed.sql` when a migration changes tables it inserts into.
 - Don't commit `.env` files or credentials.
 
 ## Environment
@@ -58,7 +58,7 @@ Copy `.env.example` to `.env` (gitignored). `DATABASE_URL` is required. `CLIENT_
 
 Integration tests live in `tests/` and run against a real PostgreSQL, because the booking rules live in SQL transactions. Don't mock the database.
 
-- Tests use a separate database, `venue_booking_test` (override with `TEST_DATABASE_URL`). `tests/globalSetup.ts` creates it and rebuilds the tables from `schema.sql` on every run, and refuses to run if the name doesn't end in `_test`.
+- Tests use a separate database, `venue_booking_test` (override with `TEST_DATABASE_URL`). `tests/globalSetup.ts` creates it and rebuilds the tables by running the migrations on every run, and refuses to run if the name doesn't end in `_test`.
 - Test files share one database and run one after another. Call `resetDb()` in `beforeEach`.
 - Reuse the helpers in `tests/helpers.ts` instead of writing setup by hand.
 - `tests/` is not covered by `tsc` (outside `tsconfig.json`'s `include`); ESLint and Prettier do cover it.
@@ -66,4 +66,3 @@ Integration tests live in `tests/` and run against a real PostgreSQL, because th
 ## Known limitations
 
 - Owners can only be created in the database (the seed has a demo owner); there is no API or UI for creating them.
-- No migration tooling: a schema change means resetting the database. `src/db/migrations/` is empty.

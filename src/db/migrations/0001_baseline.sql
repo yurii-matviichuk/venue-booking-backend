@@ -1,3 +1,4 @@
+-- Up Migration
 -- Roles: customers book, an owner confirms or cancels bookings at their venues
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -62,3 +63,6 @@ CREATE INDEX sessions_expires_at_idx ON sessions (expires_at);
 CREATE INDEX bookings_time_slot_id_idx ON bookings (time_slot_id);
 CREATE INDEX bookings_venue_id_idx ON bookings (venue_id);
 CREATE INDEX bookings_user_id_idx ON bookings (user_id);
+
+-- Down Migration
+DROP TABLE bookings, sessions, time_slots, venues, users;

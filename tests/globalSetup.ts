@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { runner } from 'node-pg-migrate';
 import pg from 'pg';
 import { TEST_DATABASE_URL } from './testDatabase.js';
 
 // Runs once before all tests: creates the test database if needed and rebuilds its tables
-// from src/db/schema.sql, so every run starts from the current schema.
+// by running the migrations in src/db/migrations, so every run also tests the migrations.
 export default async function setup() {
   const url = new URL(TEST_DATABASE_URL);
   const dbName = url.pathname.slice(1);
@@ -41,11 +41,13 @@ export default async function setup() {
   await client.connect();
   try {
     await client.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
-    const schema = readFileSync(
-      fileURLToPath(new URL('../src/db/schema.sql', import.meta.url)),
-      'utf8',
-    );
-    await client.query(schema);
+    await runner({
+      dbClient: client,
+      dir: fileURLToPath(new URL('../src/db/migrations', import.meta.url)),
+      direction: 'up',
+      migrationsTable: 'pgmigrations',
+      log: () => {},
+    });
   } finally {
     await client.end();
   }

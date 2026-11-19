@@ -11,7 +11,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "node-pg-migrate up -m src/db/migrations --envPath .env --advisory-lock-mode wait",
+    "migrate:create": "node-pg-migrate create -m src/db/migrations -j sql --migration-filename-format utc"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -20,6 +22,7 @@
     "dotenv": "^18.0.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.5",
+    "node-pg-migrate": "^9.0.0",
     "pg": "^8.23.1",
     "zod": "^4.6.5"
   },

@@ -1,5 +1,5 @@
 -- Sample data for local development only. Do not run this in production.
--- Run after schema.sql: psql -d venue_booking -f src/db/seed.sql
+-- Run after the migrations (npm run migrate): psql -d venue_booking -f src/db/seed.sql
 -- Slot dates are written for 2026-10-20 as day 0 and shifted at the bottom of this file, so they are always upcoming.
 
 -- Public demo login for venue owners: owner@example.com / demo-password. The demo owner owns every seeded venue, so they are inserted first.

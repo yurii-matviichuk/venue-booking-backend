@@ -69,13 +69,14 @@ npm install
 docker compose up -d
 # then run `docker compose ps` and wait until the postgres row's STATUS shows `(healthy)`
 # (this takes about 10-20 seconds; `health: starting` means it isn't ready yet)
+npm run migrate
 docker compose cp src/db/seed.sql postgres:/tmp/seed.sql
 docker compose exec postgres psql -U venue_user -d venue_booking -f /tmp/seed.sql
 ```
 
 Then start the server with `npm run dev` (see [Development](#development)).
 
-To reset the database, run `docker compose down -v` and then repeat the `docker compose up -d` and seed steps.
+To reset the database, run `docker compose down -v` and then repeat the `docker compose up -d`, `npm run migrate` and seed steps.
 
 ## Development
 
@@ -98,16 +99,18 @@ This repository contains only the API. The web frontend is a separate project. I
 
 ### Scripts
 
-| Script                 | Description                                   |
-| ---------------------- | --------------------------------------------- |
-| `npm run dev`          | Run the server with hot reload via `tsx`      |
-| `npm run build`        | Type-check and compile TypeScript to `dist/`  |
-| `npm start`            | Run the compiled server from `dist/server.js` |
-| `npm run lint`         | Run ESLint checks                             |
-| `npm run lint:fix`     | Auto-fix ESLint issues                        |
-| `npm run format`       | Format code with Prettier                     |
-| `npm run format:check` | Check Prettier formatting                     |
-| `npm test`             | Run the tests once (needs PostgreSQL running) |
+| Script                          | Description                                              |
+| ------------------------------- | -------------------------------------------------------- |
+| `npm run dev`                   | Run the server with hot reload via `tsx`                 |
+| `npm run build`                 | Type-check and compile TypeScript to `dist/`             |
+| `npm start`                     | Run the compiled server from `dist/server.js`            |
+| `npm run lint`                  | Run ESLint checks                                        |
+| `npm run lint:fix`              | Auto-fix ESLint issues                                   |
+| `npm run format`                | Format code with Prettier                                |
+| `npm run format:check`          | Check Prettier formatting                                |
+| `npm test`                      | Run the tests once (needs PostgreSQL running)            |
+| `npm run migrate`               | Apply pending database migrations (reads `DATABASE_URL`) |
+| `npm run migrate:create <name>` | Create a new SQL migration in `src/db/migrations/`       |
 
 ### Tests
 
@@ -135,7 +138,7 @@ For how the tricky booking rules work (availability check, concurrent bookings, 
 - `GET /health` returns `200` while the server is running, so it works as a platform health check. It does not check the database.
 - CI runs on GitHub Actions (`.github/workflows/ci.yml`): lint, build, format check and the integration tests against a throwaway PostgreSQL container, on every push to `main` and every pull request. The tests never touch the production database.
 - The API is hosted on Render with Auto-Deploy set to "After CI Checks Pass", so a push to `main` deploys only when CI succeeds. The database is on Neon.
-- There is no migration tooling: after changing `schema.sql`, apply the change to the Neon database by hand.
+- Schema changes are SQL migrations in `src/db/migrations/`, run with `node-pg-migrate` (`npm run migrate`). Set the Render start command to `npm run migrate && npm start`, so pending migrations are applied before the server starts. A failed migration stops the deploy, and the old version keeps running. The baseline migration (`0001_baseline`) must be marked as applied, not run, on a database that already has the tables (such as the existing Neon one): `DATABASE_URL=<url> npx node-pg-migrate up --fake 1 -m src/db/migrations`.
 
 ## Project Structure
 
@@ -151,7 +154,7 @@ src/
 ├── jobs/           # Background jobs started from server.ts (hourly expired-session cleanup)
 ├── validation/     # Zod schemas for API requests
 ├── types/          # Domain types (Venue, TimeSlot, Booking, User, etc.)
-└── db/             # PostgreSQL pool, schema.sql, seed.sql
+└── db/             # PostgreSQL pool, migrations/, seed.sql
 tests/              # Vitest + Supertest integration tests
 ```
 
@@ -159,6 +162,6 @@ Requests flow through the layers in this order: route → controller → service
 
 ### Known limitations
 
-- **No migrations.** The schema is a single snapshot, so a schema change means resetting the database (see [Setup](#setup)).
+- **Migrations are forward-only in practice.** Each migration has a `Down` section, but production is never rolled back that way; fix a bad migration with a new one.
 - **Owner accounts are created in the database.** There's no API or frontend flow for creating owners. The seed includes a demo owner you can use (see [Demo accounts](#demo-accounts)).
 - **No frontend in this repository.** The API is documented in [docs/api.md](docs/api.md) and can be called with any HTTP client.
