@@ -133,6 +133,9 @@ For how the tricky booking rules work (availability check, concurrent bookings, 
 - Set `NODE_ENV=production` and `CLIENT_URL` (the server refuses to start without it). `CLIENT_URL` must match the frontend origin exactly, including the port.
 - In production the session cookie is `SameSite=None; Secure`, so the frontend and API can live on different domains, but both must be served over HTTPS.
 - `GET /health` returns `200` while the server is running, so it works as a platform health check. It does not check the database.
+- CI runs on GitHub Actions (`.github/workflows/ci.yml`): lint, build, format check and the integration tests against a throwaway PostgreSQL container, on every push to `main` and every pull request. The tests never touch the production database.
+- The API is hosted on Render with Auto-Deploy set to "After CI Checks Pass", so a push to `main` deploys only when CI succeeds. The database is on Neon.
+- There is no migration tooling: after changing `schema.sql`, apply the change to the Neon database by hand.
 
 ## Project Structure
 
