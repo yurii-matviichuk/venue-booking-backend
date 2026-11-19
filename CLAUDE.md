@@ -35,6 +35,7 @@ Keep this layering.
 - Check path ids with `isUuid` before querying: Postgres throws on a malformed UUID. Treat a bad id as not found.
 - `pg` returns `DECIMAL` columns (prices) as strings; convert them with `Number()`.
 - A booking's customer name and email come from the logged-in user, never from the request body.
+- Rate limits live in `src/middleware/rateLimit.ts` (`apiLimiter` on `/api`, `authLimiter` on register and login). They are skipped when `NODE_ENV=test`; `tests/rateLimit.test.ts` turns them on with `RATE_LIMIT_IN_TESTS=true`. Counters are in memory (single instance only).
 - Roles are `customer` and `owner`. Every venue has exactly one owner (`owner_id`, `NOT NULL`). Only `updateBookingStatus` decides who may set which status; keep that rule in the service, not in routes.
 - Capacity is taken by one conditional `UPDATE` inside `withTransaction` (`services/booking.ts`) that adds the booking's `spots` to `booked` only if they fit, and cancelling gives all of them back under `FOR UPDATE`. A slot's `price` is per spot.
 - The session cookie is `SameSite=None; Secure` in production (frontend and API on different domains) and `SameSite=Lax` locally.

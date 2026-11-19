@@ -143,6 +143,11 @@ Every error response has a message and a stable code (`{ "error": "...", "code":
 | 403    | Logged in but not allowed to do this                                                  |
 | 404    | Venue, slot, booking or route not found                                               |
 | 409    | Slot fully booked, not enough spots left, or email already registered                 |
+| 429    | Too many requests (`RATE_LIMITED`), see below                                         |
 | 500    | Unexpected error (`INTERNAL_ERROR`)                                                   |
+
+### Rate limiting
+
+Requests are limited per IP address: 100 per minute across `/api`, and 10 per 15 minutes on `POST /api/auth/register` and `POST /api/auth/login`. `/health` is not limited. Over the limit, the API returns `429` with `RATE_LIMITED`. Responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` headers. Counters are kept in memory, so they reset on restart.
 
 The full list of codes is in `src/errors.ts`.

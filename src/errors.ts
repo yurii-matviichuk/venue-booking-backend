@@ -12,6 +12,7 @@ const errorDefinitions = {
   FORBIDDEN: { status: 403, message: 'You do not have permission to do this' },
   INVALID_STATUS_CHANGE: { status: 400, message: 'This booking status change is not allowed' },
   SLOT_ALREADY_STARTED: { status: 400, message: 'Slot has already started' },
+  RATE_LIMITED: { status: 429, message: 'Too many requests, please try again later' },
   ROUTE_NOT_FOUND: { status: 404, message: 'Route not found' },
   VENUE_NOT_FOUND: { status: 404, message: 'Venue not found' },
   SLOT_NOT_FOUND: { status: 404, message: 'Slot not found' },

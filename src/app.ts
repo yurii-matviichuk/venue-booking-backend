@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import { AppError } from './errors.js';
+import { apiLimiter } from './middleware/rateLimit.js';
 import authRouter from './routes/auth.js';
 import availabilityRouter from './routes/availability.js';
 import bookingRouter from './routes/booking.js';
@@ -15,6 +16,9 @@ import venueRouter from './routes/venue.js';
 
 export function createApp(): Express {
   const app = express();
+
+  // Behind the hosting proxy, trust one hop so rate limiting sees the real client IP
+  if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
   // Middleware
   // Cookies need an explicit origin and credentials: browsers ignore cookies when the origin is '*'
@@ -30,6 +34,7 @@ export function createApp(): Express {
 
   // Routes
   app.use('/health', healthRouter);
+  app.use('/api', apiLimiter);
   app.use('/api/auth', authRouter);
   app.use('/api/bookings', bookingRouter);
   app.use('/api/owner', ownerRouter);
