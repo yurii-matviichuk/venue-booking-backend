@@ -138,6 +138,7 @@ For how the tricky booking rules work (availability check, concurrent bookings, 
 - `GET /health` returns `200` while the server is running, so it works as a platform health check. It does not check the database.
 - CI runs on GitHub Actions (`.github/workflows/ci.yml`): lint, build, format check and the integration tests against a throwaway PostgreSQL container, on every push to `main` and every pull request. The tests never touch the production database.
 - The API is hosted on Render with Auto-Deploy set to "After CI Checks Pass", so a push to `main` deploys only when CI succeeds. The database is on Neon.
+- Set `DEMO_SLOT_REFRESH=true` on a demo database (like the Render + Neon one) to keep it stocked: at startup and then daily the server adds slots for the next 28 days to every venue, without touching existing slots or bookings. Leave it unset anywhere else, since it invents slots for every venue.
 - Schema changes are SQL migrations in `src/db/migrations/`, run with `node-pg-migrate` (`npm run migrate`). Set the Render start command to `npm run migrate && npm start`, so pending migrations are applied before the server starts. A failed migration stops the deploy, and the old version keeps running. The baseline migration (`0001_baseline`) must be marked as applied, not run, on a database that already has the tables (such as the existing Neon one): `DATABASE_URL=<url> npx node-pg-migrate up --fake 1 -m src/db/migrations`.
 
 ## Project Structure
@@ -151,7 +152,7 @@ src/
 ├── middleware/     # requireAuth and requireRole: reject requests without the right user
 ├── controllers/    # HTTP request/response handling, with Zod validation
 ├── services/       # Business logic, independent of HTTP
-├── jobs/           # Background jobs started from server.ts (hourly expired-session cleanup)
+├── jobs/           # Background jobs started from server.ts (hourly expired-session cleanup, optional daily demo slot top-up)
 ├── validation/     # Zod schemas for API requests
 ├── types/          # Domain types (Venue, TimeSlot, Booking, User, etc.)
 └── db/             # PostgreSQL pool, migrations/, seed.sql
