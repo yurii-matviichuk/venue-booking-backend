@@ -17,6 +17,7 @@ const errorDefinitions = {
   VENUE_NOT_FOUND: { status: 404, message: 'Venue not found' },
   SLOT_NOT_FOUND: { status: 404, message: 'Slot not found' },
   BOOKING_NOT_FOUND: { status: 404, message: 'Booking not found' },
+  DATABASE_UNAVAILABLE: { status: 503, message: 'Database is unavailable' },
   INTERNAL_ERROR: { status: 500, message: 'Internal server error' },
 } as const;
 
