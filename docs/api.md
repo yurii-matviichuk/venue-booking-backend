@@ -130,7 +130,7 @@ Returns `200` with the updated `{ "booking": { ... } }`.
 
 ### `GET /health`
 
-Returns `200` with `{ "status": "ok" }` when the server is running. It does not check the database.
+Returns `200` with `{ "status": "ok" }` when the server is running and the database answers a `SELECT 1` within 3 seconds. Otherwise it returns `503` with code `DATABASE_UNAVAILABLE`.
 
 ### Errors
 
